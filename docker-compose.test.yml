@@ -1,0 +1,21 @@
+services:
+  mongo:
+    image: mongo:7
+
+  auth-service-test:
+    build: ./auth-service
+    environment:
+      NODE_ENV: development
+      MONGO_URI: mongodb://mongo:27017/auth_test
+    depends_on:
+      - mongo
+    command: sh -c "npm install --include=dev; npm test"
+
+  product-service-test:
+    build: ./product-service
+    environment:
+      NODE_ENV: development
+      MONGO_URI: mongodb://mongo:27017/product_test
+    depends_on:
+      - mongo
+    command: sh -c "npm install --include=dev; npm test"
