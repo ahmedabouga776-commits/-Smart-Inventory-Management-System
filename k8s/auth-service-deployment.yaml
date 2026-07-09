@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: auth-service
-          image: mahmoud416/auth-service:latest
+          image: omr21/auth-service:latest
           ports:
             - containerPort: 4001
           env:
@@ -23,8 +23,23 @@ spec:
             - name: MONGO_URI
               value: mongodb://mongo:27017/auth_db
             - name: ADMIN_NAME
-              value: Admin User
+              valueFrom:
+                secretKeyRef:
+                  name: smart-inventory-secrets
+                  key: ADMIN_NAME
             - name: ADMIN_EMAIL
-              value: admin@example.com
+              valueFrom:
+                secretKeyRef:
+                  name: smart-inventory-secrets
+                  key: ADMIN_EMAIL
             - name: ADMIN_PASSWORD
-              value: admin123
+              valueFrom:
+                secretKeyRef:
+                  name: smart-inventory-secrets
+                  key: ADMIN_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: smart-inventory-secrets
+                  key: JWT_SECRET
+

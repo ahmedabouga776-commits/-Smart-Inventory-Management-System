@@ -23,6 +23,7 @@ describe("Product service", () => {
   it("creates a product", async () => {
     const response = await request(app)
       .post("/products")
+      .set("x-user-role", "Admin")
       .send({ name: "Widget", price: 9.99, quantity: 5, imageUrl: "https://example.com/item.png" })
       .expect(201);
 
@@ -32,7 +33,10 @@ describe("Product service", () => {
   it("lists products", async () => {
     await Product.create({ name: "Item", price: 4.5, quantity: 2, imageUrl: "" });
 
-    const response = await request(app).get("/products").expect(200);
+    const response = await request(app)
+      .get("/products")
+      .set("x-user-role", "Staff")
+      .expect(200);
     expect(response.body.products.length).toBe(1);
   });
 });

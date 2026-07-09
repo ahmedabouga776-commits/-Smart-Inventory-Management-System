@@ -1,0 +1,20 @@
+# Only product-service needs a ServiceMonitor.
+# It exposes /metrics with the inventory_product_quantity gauge
+# that drives the low-stock and out-of-stock alerts.
+#
+# All other services use kube-state-metrics (no /metrics endpoint needed).
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: product-service
+  namespace: default
+  labels:
+    release: kube-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: product-service
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s

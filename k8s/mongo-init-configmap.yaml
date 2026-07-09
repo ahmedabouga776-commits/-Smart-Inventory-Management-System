@@ -48,3 +48,43 @@ data:
     		imageUrl: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=300&q=80"
     	}
     ]);
+
+    db = db.getSiblingDB("supplier_db");
+    db.createCollection("suppliers");
+    db.suppliers.insertMany([
+      {
+        name: "Global Tech Supplies",
+        contactName: "John Doe",
+        email: "contact@globaltech.com",
+        phone: "+1-555-0198",
+        rating: 5,
+        suppliedCategory: "Electronics"
+      }
+    ]);
+
+    db = db.getSiblingDB("order_db");
+    db.createCollection("orders");
+    db.orders.insertMany([
+      {
+        productId: "dummy-id",
+        productName: "Notebook",
+        quantity: 10,
+        price: 12.5,
+        type: "Inbound",
+        status: "Completed",
+        userId: "system-seed",
+        createdAt: new Date()
+      }
+    ]);
+
+    db = db.getSiblingDB("notification_db");
+    db.createCollection("alerts");
+    db.alerts.insertMany([
+      {
+        type: "Procurement",
+        title: "System Initialization",
+        message: "Smart Inventory System cluster successfully booted and databases seeded.",
+        read: false,
+        timestamp: new Date()
+      }
+    ]);

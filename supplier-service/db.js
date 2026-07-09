@@ -1,0 +1,15 @@
+const mongoose = require("mongoose");
+
+const connectDb = async () => {
+  const mongoUri = process.env.MONGO_URI || "mongodb://mongo:27017/suppliers";
+
+  if (!mongoUri) {
+    throw new Error("MONGO_URI is required");
+  }
+
+  await mongoose.connect(mongoUri, {
+    autoIndex: true
+  });
+};
+
+module.exports = { connectDb };

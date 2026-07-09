@@ -5,6 +5,9 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
+
+  storageClassName: gp3-storage
+
   resources:
     requests:
       storage: 5Gi

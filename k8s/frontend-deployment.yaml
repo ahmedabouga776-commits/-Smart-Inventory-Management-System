@@ -14,6 +14,6 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: mahmoud416/frontend:latest
+          image: omr21/frontend:latest
           ports:
             - containerPort: 80

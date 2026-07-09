@@ -1,0 +1,75 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: smart-inventory-alerts
+  namespace: default
+  labels:
+    release: kube-prometheus
+spec:
+  groups:
+    - name: smart-inventory.rules
+      rules:
+
+        # ── 1. Any app deployment has 0 available replicas ──────────────────
+        - alert: ServiceDown
+          expr: |
+            kube_deployment_status_replicas_available{
+              namespace="default",
+              deployment=~"(api-gateway|auth-service|product-service|order-service|supplier-service|notification-service|frontend).*"
+            } == 0
+          for: 15s
+          labels:
+            severity: critical
+          annotations:
+            summary: "🚨 Service DOWN: {{ $labels.deployment }}"
+            description: "Deployment {{ $labels.deployment }} has 0 available replicas for more than 15 seconds."
+
+        # ── 2. MongoDB has 0 available replicas ─────────────────────────────
+        - alert: MongoDBDown
+          expr: |
+            kube_deployment_status_replicas_available{
+              namespace="default",
+              deployment=~"mongo.*"
+            } == 0
+          for: 15s
+          labels:
+            severity: critical
+          annotations:
+            summary: "🚨 MongoDB is DOWN"
+            description: "MongoDB deployment has 0 available replicas. All services depending on the database are affected."
+
+        # ── 3. Container restarting repeatedly (crash loop) ─────────────────
+        - alert: PodCrashLooping
+          expr: |
+            increase(kube_pod_container_status_restarts_total{
+              namespace="default"
+            }[15m]) > 3
+          for: 15s
+          labels:
+            severity: critical
+          annotations:
+            summary: "🔄 Pod crash-looping: {{ $labels.pod }}"
+            description: "Container {{ $labels.container }} in pod {{ $labels.pod }} restarted more than 3 times in the last 15 minutes."
+
+        # ── 4. Product low stock (1–10 units) ───────────────────────────────
+        - alert: ProductLowStock
+          expr: |
+            inventory_product_quantity > 0 and inventory_product_quantity <= 10
+          for: 15s
+          labels:
+            severity: warning
+          annotations:
+            summary: "⚠️ Low stock: {{ $labels.product_name }}"
+            description: "Product '{{ $labels.product_name }}' has only {{ $value }} unit(s) remaining. Consider restocking soon."
+
+        # ── 5. Product completely out of stock ──────────────────────────────
+        - alert: ProductOutOfStock
+          expr: |
+            inventory_product_quantity == 0
+          for: 15s
+          labels:
+            severity: critical
+          annotations:
+            summary: "🚨 OUT OF STOCK: {{ $labels.product_name }}"
+            description: "Product '{{ $labels.product_name }}' is completely out of stock (0 units). Immediate action required."
+

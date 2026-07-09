@@ -8,14 +8,29 @@ services:
       - mongo-data:/data/db
       - ./db/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js
 
+  redis:
+    image: redis:7-alpine
+    container_name: inventory-redis
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: inventory-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
   auth-service:
     build: ./auth-service
+    container_name: inventory-auth
     environment:
       PORT: 4001
       MONGO_URI: mongodb://mongo:27017/auth_db
       ADMIN_NAME: Admin User
       ADMIN_EMAIL: admin@example.com
       ADMIN_PASSWORD: admin123
+      JWT_SECRET: smart-inventory-secret
     depends_on:
       - mongo
     ports:
@@ -23,23 +38,78 @@ services:
 
   product-service:
     build: ./product-service
+    container_name: inventory-product
     environment:
       PORT: 4002
       MONGO_URI: mongodb://mongo:27017/product_db
+      REDIS_URL: redis://redis:6379
+      RABBITMQ_URL: amqp://rabbitmq:5672
+      JWT_SECRET: smart-inventory-secret
     depends_on:
       - mongo
+      - redis
+      - rabbitmq
     ports:
       - "4002:4002"
 
+  order-service:
+    build: ./order-service
+    container_name: inventory-order
+    environment:
+      PORT: 4003
+      MONGO_URI: mongodb://mongo:27017/order_db
+      PRODUCT_SERVICE_URL: http://product-service:4002
+      RABBITMQ_URL: amqp://rabbitmq:5672
+    depends_on:
+      - mongo
+      - rabbitmq
+    ports:
+      - "4003:4003"
+
+  supplier-service:
+    build: ./supplier-service
+    container_name: inventory-supplier
+    environment:
+      PORT: 4004
+      MONGO_URI: mongodb://mongo:27017/supplier_db
+      ORDER_SERVICE_URL: http://order-service:4003
+      RABBITMQ_URL: amqp://rabbitmq:5672
+    depends_on:
+      - mongo
+      - rabbitmq
+    ports:
+      - "4004:4004"
+
+  notification-service:
+    build: ./notification-service
+    container_name: inventory-notification
+    environment:
+      PORT: 4005
+      MONGO_URI: mongodb://mongo:27017/notification_db
+      RABBITMQ_URL: amqp://rabbitmq:5672
+    depends_on:
+      - mongo
+      - rabbitmq
+    ports:
+      - "4005:4005"
+
   api-gateway:
     build: ./api-gateway
+    container_name: inventory-gateway
     environment:
       PORT: 8080
       AUTH_SERVICE_URL: http://auth-service:4001
       PRODUCT_SERVICE_URL: http://product-service:4002
+      ORDER_SERVICE_URL: http://order-service:4003
+      SUPPLIER_SERVICE_URL: http://supplier-service:4004
+      NOTIFICATION_SERVICE_URL: http://notification-service:4005
+      JWT_SECRET: smart-inventory-secret
     depends_on:
       - auth-service
       - product-service
+      - order-service
+      - supplier-service
+      - notification-service
     ports:
       - "8081:8080"
 
@@ -48,6 +118,7 @@ services:
       context: ./frontend
       args:
         VITE_API_URL: http://localhost:8081
+    container_name: inventory-frontend
     depends_on:
       - api-gateway
     ports:

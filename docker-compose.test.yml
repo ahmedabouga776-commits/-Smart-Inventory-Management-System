@@ -19,3 +19,12 @@ services:
     depends_on:
       - mongo
     command: sh -c "npm install --include=dev; npm test"
+
+  order-service-test:
+    build: ./order-service
+    environment:
+      NODE_ENV: development
+      MONGO_URI: mongodb://mongo:27017/order_test
+    depends_on:
+      - mongo
+    command: sh -c "npm install --include=dev; npm test"

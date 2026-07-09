@@ -1,0 +1,180 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-inventory
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  inventory-dashboard.json: |
+    {
+      "title": "📦 Smart Inventory – Business KPIs",
+      "uid": "smart-inv-kpis",
+      "tags": ["inventory", "business"],
+      "timezone": "browser",
+      "refresh": "30s",
+      "schemaVersion": 38,
+      "time": {"from": "now-1h", "to": "now"},
+      "panels": [
+        {
+          "id": 1,
+          "type": "stat",
+          "title": "Total Products",
+          "description": "Number of distinct products tracked in inventory",
+          "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0},
+          "targets": [{
+            "datasource": {"type": "prometheus"},
+            "expr": "count(inventory_product_quantity) or vector(0)",
+            "legendFormat": "Products"
+          }],
+          "options": {"colorMode": "background", "graphMode": "none", "textMode": "auto"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"fixedColor": "blue", "mode": "fixed"},
+              "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}
+            }
+          }
+        },
+        {
+          "id": 2,
+          "type": "stat",
+          "title": "🔴 Out of Stock",
+          "description": "Products with 0 units remaining",
+          "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0},
+          "targets": [{
+            "datasource": {"type": "prometheus"},
+            "expr": "count(inventory_product_quantity == 0) or vector(0)",
+            "legendFormat": "Out of Stock"
+          }],
+          "options": {"colorMode": "background", "graphMode": "none"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "thresholds"},
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [{"color": "green", "value": null}, {"color": "red", "value": 1}]
+              }
+            }
+          }
+        },
+        {
+          "id": 3,
+          "type": "stat",
+          "title": "🟡 Low Stock (≤ 10)",
+          "description": "Products with 1–10 units remaining",
+          "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0},
+          "targets": [{
+            "datasource": {"type": "prometheus"},
+            "expr": "count(inventory_product_quantity <= 10 and inventory_product_quantity > 0) or vector(0)",
+            "legendFormat": "Low Stock"
+          }],
+          "options": {"colorMode": "background", "graphMode": "none"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "thresholds"},
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 1}]
+              }
+            }
+          }
+        },
+        {
+          "id": 4,
+          "type": "stat",
+          "title": "✅ Well Stocked (> 10)",
+          "description": "Products with more than 10 units",
+          "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0},
+          "targets": [{
+            "datasource": {"type": "prometheus"},
+            "expr": "count(inventory_product_quantity > 10) or vector(0)",
+            "legendFormat": "Well Stocked"
+          }],
+          "options": {"colorMode": "background", "graphMode": "none"},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"fixedColor": "green", "mode": "fixed"},
+              "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}
+            }
+          }
+        },
+        {
+          "id": 5,
+          "type": "bargauge",
+          "title": "📊 Stock Levels per Product",
+          "description": "Current quantity for every product. Red = out of stock, yellow = low, green = ok.",
+          "gridPos": {"h": 12, "w": 24, "x": 0, "y": 4},
+          "targets": [{
+            "datasource": {"type": "prometheus"},
+            "expr": "inventory_product_quantity",
+            "legendFormat": "{{product_name}}"
+          }],
+          "options": {
+            "orientation": "horizontal",
+            "reduceOptions": {"calcs": ["lastNotNull"]},
+            "displayMode": "gradient",
+            "showUnfilled": true,
+            "minVizWidth": 0,
+            "minVizHeight": 10
+          },
+          "fieldConfig": {
+            "defaults": {
+              "min": 0,
+              "color": {"mode": "thresholds"},
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "yellow", "value": 1},
+                  {"color": "green", "value": 11}
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 6,
+          "type": "table",
+          "title": "⚠️ Low / Out of Stock Products",
+          "description": "All products with 10 or fewer units. Sorted by quantity ascending.",
+          "gridPos": {"h": 9, "w": 24, "x": 0, "y": 16},
+          "targets": [{
+            "datasource": {"type": "prometheus"},
+            "expr": "inventory_product_quantity <= 10",
+            "legendFormat": "{{product_name}}",
+            "instant": true,
+            "format": "table"
+          }],
+          "transformations": [
+            {"id": "organize", "options": {
+              "excludeByName": {"Time": true, "__name__": true, "job": true, "instance": true},
+              "renameByName": {"product_name": "Product", "Value": "Quantity in Stock"}
+            }}
+          ],
+          "options": {"sortBy": [{"displayName": "Quantity in Stock", "desc": false}]},
+          "fieldConfig": {
+            "defaults": {
+              "color": {"mode": "thresholds"},
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {"color": "red", "value": null},
+                  {"color": "yellow", "value": 1},
+                  {"color": "green", "value": 11}
+                ]
+              },
+              "custom": {"displayMode": "color-background", "align": "center"}
+            },
+            "overrides": [
+              {
+                "matcher": {"id": "byName", "options": "Product"},
+                "properties": [
+                  {"id": "custom.displayMode", "value": "auto"},
+                  {"id": "custom.align", "value": "left"}
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    }
